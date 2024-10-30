@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Yoto Audio Player",
+  "version": "1.4.7",
+  "description": "Play the tracks from your Yoto Cards directly from your web browser.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.share.yoto.co/*"],
+      "js": ["libs/jszip.min.js","content.js"]
+    }
+  ]
+}
