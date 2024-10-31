@@ -1,7 +1,7 @@
 # Yoto Audio Player (Browser Extension)
 
 ## 👉 **How to:**
-- Scan your Yoto Card using your phone to access the ==unique URL== stored inside.
+- Scan your Yoto Card using your phone to access the **unique URL** stored inside.
 - Navigate to that URL to be able to play and download the Yoto Card content.
 
 ## ✨ **Features:**
