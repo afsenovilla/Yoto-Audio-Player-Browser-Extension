@@ -18,6 +18,6 @@
 - Improve MYO cards support.
 
 ## Web Browser Extensions
-- **[Chrome Web Store](https://chromewebstore.google.com/detail/yoto-audio-player/ndmodaehbkhkcmpmplnlijknkcppllfn)** (Ver. 1.4.6)
-- **Microsoft Edge** (Ver. 1.4.6) *Use the Chrome Web Store link above for now.*
+- **[Chrome Web Store](https://chromewebstore.google.com/detail/yoto-audio-player/ndmodaehbkhkcmpmplnlijknkcppllfn)** (Ver. 1.4.7)
+- **Microsoft Edge** (Ver. 1.4.7) *Use the Chrome Web Store link above for now.*
 - **[Firefox Browser ADD-ONS](https://addons.mozilla.org/es/firefox/addon/yoto-audio-player/)** (Ver. 1.4.7) *Not published yet
