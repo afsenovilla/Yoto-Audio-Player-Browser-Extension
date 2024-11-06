@@ -105,35 +105,48 @@ if (scriptElement) {
           });
 
           // Fetch the cover image
-          const imagePromise = fetch(
-            jsonData.props.pageProps.card.content.cover.imageL
-          )
-            .then((response) => response.blob())
-            .then((blob) => {
-              imageFolder.file("cover_image.png", blob);
-            })
-            .catch((error) =>
-              console.error("Error downloading the cover image:", error)
-            );
+          const contentCover = jsonData.props.pageProps.card.content.cover;
+          const metadataCover = jsonData.props.pageProps.card.metadata.cover;
+          const coverImageUrl = (contentCover && contentCover.imageL) || (metadataCover && metadataCover.imageL);
 
-          // Fetch images for each track
-          const trackImagePromises = tracks.map((track, index) => {
-            const imageUrl =
-              jsonData.props.pageProps.card.content.chapters[index].display
-                .icon16x16;
-            return fetch(imageUrl)
+          if (coverImageUrl) {
+            fetch(coverImageUrl)
               .then((response) => response.blob())
               .then((blob) => {
-                imageFolder.file(`${index + 1}. ${track.title}.png`, blob); // Use the index and title for the image file name
+                imageFolder.file("cover_image.png", blob);
               })
               .catch((error) =>
-                console.error("Error downloading the track image:", error)
+                console.error("Error downloading the cover image:", error)
               );
+          } else {
+            console.warn("No cover image URL found in content or metadata.");
+          }
+
+          // Fetch images for each track
+          let iconCounter = 1;
+          const trackImagePromises = tracks.map((track, index) => {
+            const chapter = jsonData.props.pageProps.card.content.chapters[index];
+            const imageUrl = chapter?.display?.icon16x16;
+          
+            if (imageUrl) {
+              const iconName = `Icon ${String(iconCounter).padStart(2, '0')}.png`;
+              iconCounter++;
+              return fetch(imageUrl)
+                .then((response) => response.blob())
+                .then((blob) => {
+                  imageFolder.file(iconName, blob); // Use the sequential icon name
+                })
+                .catch((error) =>
+                  console.error("Error downloading the track image:", error)
+                );
+            } else {
+              console.warn(`No image URL found for track: ${track.title}`);
+              return Promise.resolve();
+            }
           });
 
           Promise.all([
             ...trackPromises,
-            imagePromise,
             ...trackImagePromises,
           ]).then(() => {
             zip.generateAsync({ type: "blob" }).then((content) => {
@@ -184,10 +197,10 @@ if (scriptElement) {
     infoTable.innerHTML = `
       <tbody class="MuiTableBody-root css-1xnox0e">
       <tr class="MuiTableRow-root css-1gqug66">
-        <td class="MuiTableCell-root MuiTableCell-body MuiTableCell-sizeSmall css-1o6fzn1" id="clubAvailability" style="cursor:default;font-size:1em;font-weight:normal;border-bottom:0;text-align:center;font-family:'Castledown', sans-serif;"><b>Club Availability:</b></td>
-        <td class="MuiTableCell-root MuiTableCell-body MuiTableCell-sizeSmall css-1o6fzn1" id="storeLink:" style="cursor:default;font-size:1em;font-weight:normal;border-bottom:0;text-align:center;font-family:'Castledown', sans-serif;"><b>Buy this card:</b></td>
-        <td class="MuiTableCell-root MuiTableCell-body MuiTableCell-sizeSmall css-1o6fzn1" id="durationCell" style="cursor:default;font-size:1em;font-weight:normal;border-bottom:0;text-align:center;font-family:'Castledown', sans-serif;"><b>Total time:</b></td>
-        <td class="MuiTableCell-root MuiTableCell-body MuiTableCell-sizeSmall css-1o6fzn1" id="filesizeCell" style="cursor:default;font-size:1em;font-weight:normal;border-bottom:0;text-align:center;font-family:'Castledown', sans-serif;"><b>Total size:</b></td>
+        <td class="MuiTableCell-root MuiTableCell-body MuiTableCell-sizeSmall css-1o6fzn1" id="clubAvailability" style="cursor:default;font-size:1em;font-weight:normal;border-bottom:0;text-align:center;font-family:'Castledown', sans-serif; min-width: 125px;"></td>
+        <td class="MuiTableCell-root MuiTableCell-body MuiTableCell-sizeSmall css-1o6fzn1" id="typeOfCard" style="cursor:default;font-size:1em;font-weight:normal;border-bottom:0;text-align:center;font-family:'Castledown', sans-serif; min-width: 135px;"></td>
+        <td class="MuiTableCell-root MuiTableCell-body MuiTableCell-sizeSmall css-1o6fzn1" id="durationCell" style="cursor:default;font-size:1em;font-weight:normal;border-bottom:0;text-align:center;font-family:'Castledown', sans-serif; min-width: 80px;"></td>
+        <td class="MuiTableCell-root MuiTableCell-body MuiTableCell-sizeSmall css-1o6fzn1" id="filesizeCell" style="cursor:default;font-size:1em;font-weight:normal;border-bottom:0;text-align:center;font-family:'Castledown', sans-serif; min-width: 90px;"></td>
         </tr>
       </tbody>
     `;
@@ -224,7 +237,7 @@ if (scriptElement) {
     AU: "🇦🇺",
     EU: "🇪🇺",
   };
-  if (clubAvailability.length > 0) {
+  if (clubAvailability && clubAvailability.length > 0) {
     var storeCodes = clubAvailability
       .map(function (store) {
         if (store.store.toUpperCase() === "DEV") return null;
@@ -236,31 +249,33 @@ if (scriptElement) {
     if (storeCodes.length > 0) {
       document.getElementById("clubAvailability").innerHTML =
         "<b>Club Availability</b><br>" + storeCodes.join(", ");
-    } else {
-      document.getElementById("clubAvailability").style.display = "none";
-    }
-  }
 
-  var sortkey = jsonData.props.pageProps.card.sortkey.replace(/-/g, "+");
-  var author = jsonData.props.pageProps.card.metadata.author.replace(/ /g, "+");
+      // Add the HTML inside the .card div
+      var cardDiv = document.querySelector(".card");
+      if (cardDiv) {
+        cardDiv.innerHTML += `
+          <div style="width: 0;height: 0;border-color: #0000 #0000 #75e3b0;border-style: solid;border-width: 0 0px 52px 52px;position: relative;top: -56px;right: -110px;border-radius: 0 0 8px 0;"></div>
+          <img src="https://www.datocms-assets.com/48136/1660910450-club-icon.png" style="position: relative;top: -84px;right: -64px;width: 22px;height: 22px;">
+        `;
+      }
+    }
+  } else {
+    document.getElementById("clubAvailability").innerHTML =
+      "<b>Club Availability</b> <br>Not available";
+  }
 
   // Check if any query parameter starts with "g4"
   var queryParams = jsonData.query;
-  var hideBuyCard = Object.keys(queryParams).some(
-    (key) => key.startsWith("g4") || key.startsWith("token")
-  );
+  var typeOfCard = Object.keys(queryParams).some((key) => key.startsWith("g4"));
 
-  if (!hideBuyCard) {
-    var sortkey = jsonData.props.pageProps.card.sortkey.replace(/-/g, "+");
-    var author = jsonData.props.pageProps.card.metadata.author.replace(
-      / /g,
-      "+"
-    );
+  if (!typeOfCard) {
     document.getElementById(
-      "storeLink:"
-    ).innerHTML = `<b>Buy this card</b> <br><a href="https://yotoplay.com/collections/library?q=${sortkey}&author=${author}" target="_blank" style="text-decoration: none; color: inherit;">Yoto Card Store</a>`;
+      "typeOfCard"
+    ).innerHTML = `<b>Type of card:</b> <br>Official Yoto Card`;
   } else {
-    document.getElementById("storeLink:").style.display = "none";
+    document.getElementById(
+      "typeOfCard"
+    ).innerHTML = `<b>Type of card:</b> <br>MYO Card`;
   }
 
   // Replace the image
@@ -272,6 +287,7 @@ if (scriptElement) {
       "https://www.datocms-assets.com/48136/1670930475-parental-control.png";
     downloadElement.alt = "Download";
     downloadElement.style.cursor = "pointer";
+    downloadElement.style.width = "60px";
   }
 
   // Assuming the footer download button has been selected
@@ -302,32 +318,47 @@ if (scriptElement) {
     });
 
     // Fetch the cover image
-    const imagePromise = fetch(
-      jsonData.props.pageProps.card.content.cover.imageL
-    )
-      .then((response) => response.blob())
-      .then((blob) => {
-        imageFolder.file("cover_image.png", blob);
-      })
-      .catch((error) =>
-        console.error("Error downloading the cover image:", error)
-      );
+    const contentCover = jsonData.props.pageProps.card.content.cover;
+    const metadataCover = jsonData.props.pageProps.card.metadata.cover;
+    const coverImageUrl = (contentCover && contentCover.imageL) || (metadataCover && metadataCover.imageL);
 
-    // Fetch images for each track
-    const trackImagePromises = tracks.map((track, index) => {
-      const imageUrl =
-        jsonData.props.pageProps.card.content.chapters[index].display.icon16x16;
-      return fetch(imageUrl)
+    if (coverImageUrl) {
+      fetch(coverImageUrl)
         .then((response) => response.blob())
         .then((blob) => {
-          imageFolder.file(`${index + 1}. ${track.title}.png`, blob); // Use the index and title for the image file name
+          imageFolder.file("cover_image.png", blob);
         })
         .catch((error) =>
-          console.error("Error downloading the track image:", error)
+          console.error("Error downloading the cover image:", error)
         );
+    } else {
+      console.warn("No cover image URL found in content or metadata.");
+    }
+
+    // Fetch images for each track
+    let iconCounter = 1;
+    const trackImagePromises = tracks.map((track, index) => {
+      const chapter = jsonData.props.pageProps.card.content.chapters[index];
+      const imageUrl = chapter?.display?.icon16x16;
+    
+      if (imageUrl) {
+        const iconName = `Icon ${String(iconCounter).padStart(2, '0')}.png`;
+        iconCounter++;
+        return fetch(imageUrl)
+          .then((response) => response.blob())
+          .then((blob) => {
+            imageFolder.file(iconName, blob); // Use the sequential icon name
+          })
+          .catch((error) =>
+            console.error("Error downloading the track image:", error)
+          );
+      } else {
+        console.warn(`No image URL found for track: ${track.title}`);
+        return Promise.resolve();
+      }
     });
 
-    Promise.all([...trackPromises, imagePromise, ...trackImagePromises]).then(
+    Promise.all([...trackPromises, ...trackImagePromises]).then(
       () => {
         zip.generateAsync({ type: "blob" }).then((content) => {
           const url = window.URL.createObjectURL(content);
@@ -389,6 +420,12 @@ if (scriptElement) {
     div.style.display = "none";
   });
 
+  // Hide the divs with class="MuiGrid-root MuiGrid-item MuiGrid-grid-xs-4 css-1udb513"
+  const gridXs4Divs = document.querySelectorAll("div.MuiGrid-root.MuiGrid-item.MuiGrid-grid-xs-4.css-1udb513");
+  gridXs4Divs.forEach((div) => {
+    div.style.display = "none";
+  });
+
   // Add margin-top to the div with class="card-title"
   const cardTitleDiv = document.querySelector(".card-title");
   if (cardTitleDiv) {
@@ -398,14 +435,18 @@ if (scriptElement) {
   // Adjust padding-bottom to the div with class="playerBody"
   const playerBody = document.querySelector("div.playerBody");
   if (playerBody) {
-    playerBody.style.paddingBottom = "70px";
+    playerBody.style.paddingBottom = "80px";
   }
 
-  // Select the element with the class css-b5x8ma
+  // Apply padding-bottom style to the element with the class='css-b5x8ma'
   const targetb5x8ma = document.querySelector(".css-b5x8ma");
-
-  // Apply padding-bottom style
   if (targetb5x8ma) {
     targetb5x8ma.style.paddingBottom = "8px";
+  }
+
+  const cardStyle = document.querySelector(".card");
+  if (cardStyle) {
+    cardStyle.style.width = "162px";
+    cardStyle.style.height = "258px";
   }
 }
