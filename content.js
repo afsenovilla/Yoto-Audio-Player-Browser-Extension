@@ -511,6 +511,20 @@ if (scriptElement) {
     cardDescriptionDiv.insertAdjacentElement("afterend", infoTable);
   }
 
+  // Fills one of the info-table cells with a "<b>Label</b><br>value" layout
+  // without touching innerHTML, so no interpolated value (even though these
+  // are only numbers/short strings today) is ever parsed as markup.
+  function setLabelValue(elementId, label, value) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    el.textContent = "";
+    const labelEl = document.createElement("b");
+    labelEl.textContent = label;
+    el.appendChild(labelEl);
+    el.appendChild(document.createElement("br"));
+    el.appendChild(document.createTextNode(value));
+  }
+
   // Calculate and insert the Total Time, Total Size, and Club Availability
   const durationInSeconds = card.metadata.media.duration;
   const hours = Math.floor(durationInSeconds / 3600);
@@ -522,15 +536,11 @@ if (scriptElement) {
           .toString()
           .padStart(2, "0")}`
       : `${minutes}:${seconds.toString().padStart(2, "0")}`;
-  document.getElementById(
-    "durationCell"
-  ).innerHTML = `<b>Total time</b><br>${formattedDuration}`;
+  setLabelValue("durationCell", "Total time", formattedDuration);
 
   const fileSizeInBytes = card.metadata.media.fileSize;
   const fileSizeInMB = (fileSizeInBytes / (1024 * 1024)).toFixed(2);
-  document.getElementById(
-    "filesizeCell"
-  ).innerHTML = `<b>Total size</b><br>${fileSizeInMB} MB`;
+  setLabelValue("filesizeCell", "Total size", `${fileSizeInMB} MB`);
 
   const clubAvailability = card.clubAvailability || [];
   const storeFlags = {
@@ -555,20 +565,24 @@ if (scriptElement) {
   }
 
   if (storeCodes.length > 0) {
-    document.getElementById("clubAvailability").innerHTML =
-      "<b>Club Availability</b><br>" + storeCodes.join(", ");
+    setLabelValue("clubAvailability", "Club Availability", storeCodes.join(", "));
 
-    // Add the HTML inside the .card div
+    // Add the club badge inside the .card div
     const cardDiv = document.querySelector(".card");
     if (cardDiv) {
-      cardDiv.innerHTML += `
-        <div style="width: 0;height: 0;border-color: #0000 #0000 #75e3b0;border-style: solid;border-width: 0 0px 52px 52px;position: relative;top: -56px;right: -110px;border-radius: 0 0 8px 0;"></div>
-        <img src="https://www.datocms-assets.com/48136/1660910450-club-icon.png" style="position: relative;top: -84px;right: -64px;width: 22px;height: 22px;">
-      `;
+      const badgeTriangle = document.createElement("div");
+      badgeTriangle.style.cssText =
+        "width:0;height:0;border-color:#0000 #0000 #75e3b0;border-style:solid;border-width:0 0px 52px 52px;position:relative;top:-56px;right:-110px;border-radius:0 0 8px 0;";
+
+      const badgeIcon = document.createElement("img");
+      badgeIcon.src = "https://www.datocms-assets.com/48136/1660910450-club-icon.png";
+      badgeIcon.style.cssText = "position:relative;top:-84px;right:-64px;width:22px;height:22px;";
+
+      cardDiv.appendChild(badgeTriangle);
+      cardDiv.appendChild(badgeIcon);
     }
   } else {
-    document.getElementById("clubAvailability").innerHTML =
-      "<b>Club Availability</b> <br>Not available";
+    setLabelValue("clubAvailability", "Club Availability", "Not available");
   }
 
   // Check if any query parameter starts with "g4"
@@ -576,17 +590,11 @@ if (scriptElement) {
   const typeOfCard = Object.keys(queryParams).some((key) => key.startsWith("g4"));
 
   if (typeOfCard && storeCodes.length > 0) {
-    document.getElementById(
-      "typeOfCard"
-    ).innerHTML = `<b>Type of card</b> <br>Yoto Club digital card`;
+    setLabelValue("typeOfCard", "Type of card", "Yoto Club digital card");
   } else if (!typeOfCard) {
-    document.getElementById(
-      "typeOfCard"
-    ).innerHTML = `<b>Type of card</b> <br>Premium audio`;
+    setLabelValue("typeOfCard", "Type of card", "Premium audio");
   } else {
-    document.getElementById(
-      "typeOfCard"
-    ).innerHTML = `<b>Type of card</b> <br>Playlist`;
+    setLabelValue("typeOfCard", "Type of card", "Playlist");
   }
 
   // Replace the image
@@ -667,8 +675,9 @@ if (scriptElement) {
       "Download the free Yoto App and tap the card on your mobile"
     )
   ) {
-    secondText.innerHTML =
-      "Click here to download the audio, icons and cover on your computer or smartphone.<br>";
+    secondText.textContent =
+      "Click here to download the audio, icons and cover on your computer or smartphone.";
+    secondText.appendChild(document.createElement("br"));
     secondText.style.fontFamily = "Castledown";
     secondText.style.fontSize = "17px";
   }
