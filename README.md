@@ -19,6 +19,6 @@
 - Improve styling.
 
 ## Web Browser Extensions
-- **[Chrome Web Store](https://chromewebstore.google.com/detail/yoto-audio-player/ndmodaehbkhkcmpmplnlijknkcppllfn)** (Ver. 1.4.9)
-- **[Microsoft Edge](https://microsoftedge.microsoft.com/addons/detail/jnpkhcjceoolcliepogelalaccmohjhl)** (Ver. 1.4.7) *(Ver. 1.4.9 in revision)*
+- **[Chrome Web Store](https://chromewebstore.google.com/detail/yoto-audio-player/ndmodaehbkhkcmpmplnlijknkcppllfn)** (Latest version)
+- **[Microsoft Edge](https://microsoftedge.microsoft.com/addons/detail/jnpkhcjceoolcliepogelalaccmohjhl)** (Latest version)
 - ~~**[Firefox Browser ADD-ONS](https://addons.mozilla.org/es/firefox/addon/yoto-audio-player/)** (Ver. 1.4.7)~~ *Not published yet*
