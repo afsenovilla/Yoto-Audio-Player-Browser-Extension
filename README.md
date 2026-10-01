@@ -21,4 +21,4 @@
 ## Web Browser Extensions
 - **[Chrome Web Store](https://chromewebstore.google.com/detail/yoto-audio-player/ndmodaehbkhkcmpmplnlijknkcppllfn)** (Latest version)
 - **[Microsoft Edge](https://microsoftedge.microsoft.com/addons/detail/jnpkhcjceoolcliepogelalaccmohjhl)** (Latest version)
-- ~~**[Firefox Browser ADD-ONS](https://addons.mozilla.org/es/firefox/addon/yoto-audio-player/)** (Ver. 1.4.7)~~ *Not published yet*
+- **[Firefox Add-ons](https://addons.mozilla.org/addon/yoto-audio-player/)** (Latest version)
