@@ -585,6 +585,33 @@ if (scriptElement) {
     setLabelValue("clubAvailability", "Club Availability", "Not available");
   }
 
+  // Official (Club) cards are sold in the Yoto shop, so offer a link that
+  // searches it for this card's title. It only uses data already in the page
+  // and opens in a new tab, so the extension needs no extra permissions.
+  if (storeCodes.length > 0 && card.title) {
+    const infoTableBody = document.querySelector("#clubAvailability")
+      ?.closest("tbody");
+    if (infoTableBody) {
+      const shopRow = document.createElement("tr");
+      const shopCell = document.createElement("td");
+      shopCell.colSpan = 4;
+      shopCell.style.cssText =
+        "border-bottom:0;text-align:center;font-family:'Castledown', sans-serif;";
+
+      const shopLink = document.createElement("a");
+      shopLink.href =
+        "https://yotoplay.com/search?q=" + encodeURIComponent(card.title);
+      shopLink.target = "_blank";
+      shopLink.rel = "noopener noreferrer";
+      shopLink.textContent = "Find this card in the Yoto shop";
+      shopLink.style.cssText = "color:inherit;text-decoration:underline;";
+
+      shopCell.appendChild(shopLink);
+      shopRow.appendChild(shopCell);
+      infoTableBody.appendChild(shopRow);
+    }
+  }
+
   // Check if any query parameter starts with "g4"
   const queryParams = jsonData.query || {};
   const typeOfCard = Object.keys(queryParams).some((key) => key.startsWith("g4"));

@@ -13,7 +13,7 @@
 - Show more info. 🆕
 
 ## 🔜 **Future features:**
-- Add shop integration.
+- Add shop integration. (basic shop link added for official cards)
 - More download options.
 - Improve MYO cards support.
 - Improve styling.
