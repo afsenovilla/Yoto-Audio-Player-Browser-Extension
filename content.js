@@ -585,9 +585,10 @@ if (scriptElement) {
     setLabelValue("clubAvailability", "Club Availability", "Not available");
   }
 
-  // Official (Club) cards are sold in the Yoto shop, so offer a link that
-  // searches it for this card's title. It only uses data already in the page
-  // and opens in a new tab, so the extension needs no extra permissions.
+  // Official (Club) cards are sold in the Yoto shop. Show one link per region
+  // the card is available in. The links start as a shop search for the title,
+  // and the background script then tries to find the actual product page so
+  // the link can show its price and availability.
   if (storeCodes.length > 0 && card.title) {
     const infoTableBody = document.querySelector("#clubAvailability")
       ?.closest("tbody");
@@ -598,16 +599,28 @@ if (scriptElement) {
       shopCell.style.cssText =
         "border-bottom:0;text-align:center;font-family:'Castledown', sans-serif;";
 
-      // Each region has its own shop subdomain: one link per region where
-      // the card is available.
       const SHOP_REGIONS = ["eu", "uk", "us", "ca", "au"];
       const regions = clubAvailability
         .map((store) => store.store.toLowerCase())
         .filter((code, i, all) => SHOP_REGIONS.includes(code) && all.indexOf(code) === i);
 
+      const extensionApi = typeof browser !== "undefined" ? browser : chrome;
+
+      const formatPrice = (product) => {
+        try {
+          return new Intl.NumberFormat(undefined, {
+            style: "currency",
+            currency: product.currency,
+          }).format(product.price);
+        } catch (e) {
+          return product.price.toFixed(2);
+        }
+      };
+
       shopCell.appendChild(document.createTextNode("Find in the Yoto shop: "));
       regions.forEach((region, i) => {
         if (i > 0) shopCell.appendChild(document.createTextNode(" · "));
+        const label = `${storeFlags[region.toUpperCase()]} ${region.toUpperCase()}`;
         const shopLink = document.createElement("a");
         shopLink.href =
           `https://${region}.yotoplay.com/collections/library?q=` +
@@ -615,9 +628,31 @@ if (scriptElement) {
           "&prioritiseAvailableForSaleInSearch=20&collectionSlugs=library";
         shopLink.target = "_blank";
         shopLink.rel = "noopener noreferrer";
-        shopLink.textContent = `${storeFlags[region.toUpperCase()]} ${region.toUpperCase()}`;
+        shopLink.textContent = label;
         shopLink.style.cssText = "color:inherit;text-decoration:underline;";
         shopCell.appendChild(shopLink);
+
+        // If the lookup fails for any reason the search link above stays.
+        try {
+          Promise.resolve(
+            extensionApi.runtime.sendMessage({
+              type: "yap-shop-product",
+              region,
+              title: card.title,
+            })
+          )
+            .then((response) => {
+              const product = response && response.product;
+              if (!product) return;
+              shopLink.href = product.url;
+              const details = [formatPrice(product)];
+              if (!product.availableForSale) details.push("out of stock");
+              shopLink.textContent = `${label} ${details.join(", ")}`;
+            })
+            .catch(() => {});
+        } catch (e) {
+          // No extension messaging available: keep the search link.
+        }
       });
       shopRow.appendChild(shopCell);
       infoTableBody.appendChild(shopRow);
