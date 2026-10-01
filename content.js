@@ -603,13 +603,18 @@ if (scriptElement) {
     const infoTableBody = document.querySelector("#clubAvailability")
       ?.closest("tbody");
     if (infoTableBody) {
-      const shopRow = document.createElement("tr");
+      // The shop gets its own column in the info row, styled like the others.
+      const infoRow = infoTableBody.querySelector("tr");
       const shopCell = document.createElement("td");
-      shopCell.colSpan = 4;
+      shopCell.id = "shopCell";
+      shopCell.className = "MuiTableCell-root MuiTableCell-body MuiTableCell-sizeSmall css-1o6fzn1";
       shopCell.style.cssText =
-        "border-bottom:0;text-align:center;font-family:'Castledown', sans-serif;";
-      shopRow.appendChild(shopCell);
-      infoTableBody.appendChild(shopRow);
+        "cursor:default;font-size:1em;font-weight:normal;border-bottom:0;text-align:center;font-family:'Castledown', sans-serif; min-width: 110px; line-height: 1.8;";
+      infoRow.appendChild(shopCell);
+
+      // Make room for the fifth column.
+      const infoTableEl = infoTableBody.closest("table");
+      if (infoTableEl) infoTableEl.style.maxWidth = "680px";
 
       const extensionApi = typeof browser !== "undefined" ? browser : chrome;
       const knownRegions = clubRegions.length > 0;
@@ -658,19 +663,18 @@ if (scriptElement) {
 
         // Unknown availability and nothing found: one search link, only once
         // every lookup has finished.
-        const fallback = !knownRegions && shown.length === 0 && done;
-        if (fallback) shown = [regionsToCheck[0]];
+        const searchOnly = !knownRegions && shown.length === 0 && done;
+        if (searchOnly) shown = [regionsToCheck[0]];
 
-        shopRow.style.display = shown.length === 0 ? "none" : "";
+        shopCell.style.display = shown.length === 0 ? "none" : "";
         if (shown.length === 0) return;
 
-        shopCell.appendChild(
-          document.createTextNode(
-            fallback ? "Search in the Yoto shop: " : "Find in the Yoto shop: "
-          )
-        );
-        shown.forEach((region, i) => {
-          if (i > 0) shopCell.appendChild(document.createTextNode(" · "));
+        const label = document.createElement("b");
+        label.textContent = "Yoto shop";
+        shopCell.appendChild(label);
+
+        shown.forEach((region) => {
+          shopCell.appendChild(document.createElement("br"));
           const product = products[region];
           const link = document.createElement("a");
           link.href = product ? product.url : searchUrl(region);
@@ -683,6 +687,8 @@ if (scriptElement) {
             const details = [formatPrice(product)];
             if (!product.availableForSale) details.push("out of stock");
             text += ` ${details.join(", ")}`;
+          } else {
+            text += " search";
           }
           link.textContent = text;
           shopCell.appendChild(link);
