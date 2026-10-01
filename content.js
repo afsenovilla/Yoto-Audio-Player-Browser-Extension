@@ -599,8 +599,16 @@ if (scriptElement) {
         "border-bottom:0;text-align:center;font-family:'Castledown', sans-serif;";
 
       const shopLink = document.createElement("a");
+      // Each region has its own shop subdomain; fall back to the EU one.
+      const SHOP_REGIONS = ["eu", "uk", "us", "ca", "au"];
+      const region =
+        clubAvailability
+          .map((store) => store.store.toLowerCase())
+          .find((code) => SHOP_REGIONS.includes(code)) || "eu";
       shopLink.href =
-        "https://yotoplay.com/search?q=" + encodeURIComponent(card.title);
+        `https://${region}.yotoplay.com/collections/library?q=` +
+        encodeURIComponent(card.title) +
+        "&prioritiseAvailableForSaleInSearch=20&collectionSlugs=library";
       shopLink.target = "_blank";
       shopLink.rel = "noopener noreferrer";
       shopLink.textContent = "Find this card in the Yoto shop";
