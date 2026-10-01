@@ -598,23 +598,27 @@ if (scriptElement) {
       shopCell.style.cssText =
         "border-bottom:0;text-align:center;font-family:'Castledown', sans-serif;";
 
-      const shopLink = document.createElement("a");
-      // Each region has its own shop subdomain; fall back to the EU one.
+      // Each region has its own shop subdomain: one link per region where
+      // the card is available.
       const SHOP_REGIONS = ["eu", "uk", "us", "ca", "au"];
-      const region =
-        clubAvailability
-          .map((store) => store.store.toLowerCase())
-          .find((code) => SHOP_REGIONS.includes(code)) || "eu";
-      shopLink.href =
-        `https://${region}.yotoplay.com/collections/library?q=` +
-        encodeURIComponent(card.title) +
-        "&prioritiseAvailableForSaleInSearch=20&collectionSlugs=library";
-      shopLink.target = "_blank";
-      shopLink.rel = "noopener noreferrer";
-      shopLink.textContent = "Find this card in the Yoto shop";
-      shopLink.style.cssText = "color:inherit;text-decoration:underline;";
+      const regions = clubAvailability
+        .map((store) => store.store.toLowerCase())
+        .filter((code, i, all) => SHOP_REGIONS.includes(code) && all.indexOf(code) === i);
 
-      shopCell.appendChild(shopLink);
+      shopCell.appendChild(document.createTextNode("Find in the Yoto shop: "));
+      regions.forEach((region, i) => {
+        if (i > 0) shopCell.appendChild(document.createTextNode(" · "));
+        const shopLink = document.createElement("a");
+        shopLink.href =
+          `https://${region}.yotoplay.com/collections/library?q=` +
+          encodeURIComponent(card.title) +
+          "&prioritiseAvailableForSaleInSearch=20&collectionSlugs=library";
+        shopLink.target = "_blank";
+        shopLink.rel = "noopener noreferrer";
+        shopLink.textContent = `${storeFlags[region.toUpperCase()]} ${region.toUpperCase()}`;
+        shopLink.style.cssText = "color:inherit;text-decoration:underline;";
+        shopCell.appendChild(shopLink);
+      });
       shopRow.appendChild(shopCell);
       infoTableBody.appendChild(shopRow);
     }
