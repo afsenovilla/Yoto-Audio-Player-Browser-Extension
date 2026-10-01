@@ -13,10 +13,7 @@
 - Show more info. 🆕
 
 ## 🔜 **Future features:**
-~~- Add shop integration.~~
-~~- More download options.~~
 - Improve MYO cards support.
-~~- Improve styling.~~
 
 ## Web Browser Extensions
 - **[Chrome Web Store](https://chromewebstore.google.com/detail/yoto-audio-player/ndmodaehbkhkcmpmplnlijknkcppllfn)** (Latest version)
