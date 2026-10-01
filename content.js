@@ -585,11 +585,21 @@ if (scriptElement) {
     setLabelValue("clubAvailability", "Club Availability", "Not available");
   }
 
-  // Official (Club) cards are sold in the Yoto shop. Show one link per region
-  // the card is available in. The links start as a shop search for the title,
-  // and the background script then tries to find the actual product page so
-  // the link can show its price and availability.
-  if (storeCodes.length > 0 && card.title) {
+  // Official cards are sold in the Yoto shop. Show a link per region, with the
+  // price and availability when the card's product page can be found.
+  //  - Club cards list the regions they are available in, so one link per
+  //    region is shown straight away (a shop search for the title) and later
+  //    upgraded to the product page.
+  //  - Other official cards (userId "yoto") don't say where they are sold, so
+  //    every shop is checked and only the regions that have the product are
+  //    shown; if none does, a single search link is offered.
+  const SHOP_REGIONS = ["eu", "uk", "us", "ca", "au"];
+  const clubRegions = clubAvailability
+    .map((store) => store.store.toLowerCase())
+    .filter((code, i, all) => SHOP_REGIONS.includes(code) && all.indexOf(code) === i);
+  const isOfficialCard = clubRegions.length > 0 || card.userId === "yoto";
+
+  if (isOfficialCard && card.title) {
     const infoTableBody = document.querySelector("#clubAvailability")
       ?.closest("tbody");
     if (infoTableBody) {
@@ -598,13 +608,17 @@ if (scriptElement) {
       shopCell.colSpan = 4;
       shopCell.style.cssText =
         "border-bottom:0;text-align:center;font-family:'Castledown', sans-serif;";
-
-      const SHOP_REGIONS = ["eu", "uk", "us", "ca", "au"];
-      const regions = clubAvailability
-        .map((store) => store.store.toLowerCase())
-        .filter((code, i, all) => SHOP_REGIONS.includes(code) && all.indexOf(code) === i);
+      shopRow.appendChild(shopCell);
+      infoTableBody.appendChild(shopRow);
 
       const extensionApi = typeof browser !== "undefined" ? browser : chrome;
+      const knownRegions = clubRegions.length > 0;
+      const regionsToCheck = knownRegions ? clubRegions : SHOP_REGIONS;
+
+      const searchUrl = (region) =>
+        `https://${region}.yotoplay.com/collections/library?q=` +
+        encodeURIComponent(card.title) +
+        "&prioritiseAvailableForSaleInSearch=20&collectionSlugs=library";
 
       const formatPrice = (product) => {
         try {
@@ -617,45 +631,75 @@ if (scriptElement) {
         }
       };
 
-      shopCell.appendChild(document.createTextNode("Find in the Yoto shop: "));
-      regions.forEach((region, i) => {
-        if (i > 0) shopCell.appendChild(document.createTextNode(" · "));
-        const label = `${storeFlags[region.toUpperCase()]} ${region.toUpperCase()}`;
-        const shopLink = document.createElement("a");
-        shopLink.href =
-          `https://${region}.yotoplay.com/collections/library?q=` +
-          encodeURIComponent(card.title) +
-          "&prioritiseAvailableForSaleInSearch=20&collectionSlugs=library";
-        shopLink.target = "_blank";
-        shopLink.rel = "noopener noreferrer";
-        shopLink.textContent = label;
-        shopLink.style.cssText = "color:inherit;text-decoration:underline;";
-        shopCell.appendChild(shopLink);
-
-        // If the lookup fails for any reason the search link above stays.
+      const lookupProduct = (region) => {
         try {
-          Promise.resolve(
+          return Promise.resolve(
             extensionApi.runtime.sendMessage({
               type: "yap-shop-product",
               region,
               title: card.title,
             })
           )
-            .then((response) => {
-              const product = response && response.product;
-              if (!product) return;
-              shopLink.href = product.url;
-              const details = [formatPrice(product)];
-              if (!product.availableForSale) details.push("out of stock");
-              shopLink.textContent = `${label} ${details.join(", ")}`;
-            })
-            .catch(() => {});
+            .then((response) => (response && response.product) || null)
+            .catch(() => null);
         } catch (e) {
-          // No extension messaging available: keep the search link.
+          // No extension messaging available.
+          return Promise.resolve(null);
         }
-      });
-      shopRow.appendChild(shopCell);
-      infoTableBody.appendChild(shopRow);
+      };
+
+      // products: region -> product (or null when not found / not checked yet)
+      const render = (products, done) => {
+        shopCell.textContent = "";
+
+        let shown = knownRegions
+          ? regionsToCheck
+          : regionsToCheck.filter((region) => products[region]);
+
+        // Unknown availability and nothing found: one search link, only once
+        // every lookup has finished.
+        const fallback = !knownRegions && shown.length === 0 && done;
+        if (fallback) shown = [regionsToCheck[0]];
+
+        shopRow.style.display = shown.length === 0 ? "none" : "";
+        if (shown.length === 0) return;
+
+        shopCell.appendChild(
+          document.createTextNode(
+            fallback ? "Search in the Yoto shop: " : "Find in the Yoto shop: "
+          )
+        );
+        shown.forEach((region, i) => {
+          if (i > 0) shopCell.appendChild(document.createTextNode(" · "));
+          const product = products[region];
+          const link = document.createElement("a");
+          link.href = product ? product.url : searchUrl(region);
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.style.cssText = "color:inherit;text-decoration:underline;";
+
+          let text = `${storeFlags[region.toUpperCase()]} ${region.toUpperCase()}`;
+          if (product) {
+            const details = [formatPrice(product)];
+            if (!product.availableForSale) details.push("out of stock");
+            text += ` ${details.join(", ")}`;
+          }
+          link.textContent = text;
+          shopCell.appendChild(link);
+        });
+      };
+
+      const products = {};
+      render(products, false);
+
+      Promise.all(
+        regionsToCheck.map((region) =>
+          lookupProduct(region).then((product) => {
+            products[region] = product;
+            render(products, false);
+          })
+        )
+      ).then(() => render(products, true));
     }
   }
 
